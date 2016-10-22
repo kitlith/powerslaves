@@ -96,14 +96,17 @@ int main(int argc, char *argv[]) {
     if (!header) {
         puts("Memory allocation failure!");
     }
+    memset(header, 0, 0x4000);
 
     ntrcmd[0] = 0x00;
     printNTRCommand(ntrcmd);
     sendNTRMessage(ntrcmd, 0x4000);
 
-    hid_read(powersave, header, 0x4000);
+    unsigned res = hid_read(powersave, header, 0x4000);
     FILE *headerfile = fopen("header.bin", "wb");
     fwrite(header, 0x1000, 1, headerfile);
+
+    printf("%u bytes read.\n", res);
 
     return 0;
 }
