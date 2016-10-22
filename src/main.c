@@ -13,21 +13,21 @@ enum command_type {
     SWITCH_MODE = 0x10,
     NTR_MODE = 0x11,
     NTR = 0x13,
-    CTR = 0x14
+    CTR = 0x14,
+    SPI = 0x15
 };
 
-static void printNTRCommand(uint8_t *cmdbuf) {
-    // This is quick and ugly and everything. Hope that nothing invalid gets passed in here.
-    printf("NTRCMD %02x %02x %02x %02x %02x %02x %02x %02x\n",
-        cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4], cmdbuf[5], cmdbuf[6], cmdbuf[7]);
+static void printCommand(const char *prefix, uint8_t *cmdbuf, unsigned len) {
+    if (!cmdbuf) return;
+    printf("%s ", prefix);
+    for (unsigned iii = 0; iii < len; ++iii) {
+        printf("%02x", cmdbuf[iii]);
+    }
+    printf("\n");
 }
 
-static void printCTRCommand(uint8_t *cmdbuf) {
-    // This is quick and ugly and everything. Hope that nothing invalid gets passed in here.
-    printf("NTRCMD %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-        cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4], cmdbuf[5], cmdbuf[6], cmdbuf[7],
-        cmdbuf[8], cmdbuf[9], cmdbuf[10], cmdbuf[11], cmdbuf[12], cmdbuf[13], cmdbuf[14], cmdbuf[15]);
-}
+#define printNTRCommand(buf) printCommand("NTR", buf, 0x08)
+#define printCTRCommand(buf) printCommand("CTR", buf, 0x10)
 
 static void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, uint16_t response_len) {
     outbuf[1] = type;
@@ -38,14 +38,17 @@ static void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, ui
 
     if (cmdbuf) {
         memcpy(outbuf + 6, cmdbuf, len);
-    } else {
+    } else if (len) {
         memset(outbuf + 6, 0, len);
     }
 
     hid_write(powersave, outbuf, sizeof(outbuf));
 }
 
-#define sendGenericMessage(type, response_length) sendMessage(type, NULL, 0, response_length)
+#define sendGenericMessage(type, response_length) sendMessage(type, NULL, 0x00, response_length)
+#define sendNTRMessage(cmdbuf, response_length) sendMessage(NTR, cmdbuf, 0x08, response_length)
+#define sendCTRMessage(cmdbuf, response_length) sendMessage(CTR, cmdbuf, 0x10, response_length)
+#define sendSPIMessage(cmdbuf, len, response_length) sendMessage(SPI, cmdbuf, len, response_length)
 
 int main(int argc, char *argv[]) {
     if (hid_init()) {
@@ -69,8 +72,6 @@ int main(int argc, char *argv[]) {
         printf("Product: %ls\n", wstr);
     }
 
-    uint8_t ntrcmd[0x8] = {0, 0, 0, 0, 0, 0, 0, 0};
-
     sendGenericMessage(SWITCH_MODE, 0x00);
     sendGenericMessage(NTR_MODE, 0x00);
     sendGenericMessage(TEST, 0x40);
@@ -80,9 +81,20 @@ int main(int argc, char *argv[]) {
         printf("buf[0x%02x]: %02x\n", iii, outbuf[iii]);
     }
 
+    memset(outbuf, 0, sizeof(outbuf));
+
+    uint8_t ntrcmd[0x8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
     ntrcmd[0] = 0x9F;
     printNTRCommand(ntrcmd);
     sendMessage(NTR, ntrcmd, 0x8, 0x2000);
+
+    ntrcmd[0] = 0x90;
+    printNTRCommand(ntrcmd);
+    sendNTRMessage(ntrcmd, 0x4);
+    res = hid_read(powersave, outbuf, 0x4);
+    printf("CartID: %02x%02x%02x%02x\n",
+        outbuf[0], outbuf[1], outbuf[2], outbuf[3]);
 
     return 0;
 }
