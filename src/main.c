@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <hidapi/hidapi.h>
 
@@ -62,24 +63,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    {
-        wchar_t wstr[255];
-
-        hid_get_manufacturer_string(powersave, wstr, 255);
-        printf("Manufacturer: %ls\n", wstr);
-
-        hid_get_product_string(powersave, wstr, 255);
-        printf("Product: %ls\n", wstr);
-    }
-
     sendGenericMessage(SWITCH_MODE, 0x00);
     sendGenericMessage(NTR_MODE, 0x00);
     sendGenericMessage(TEST, 0x40);
-
-    unsigned res = hid_read(powersave, outbuf, 0x40);
-    for (unsigned iii = 0; iii < res; ++iii) {
-        printf("buf[0x%02x]: %02x\n", iii, outbuf[iii]);
-    }
 
     memset(outbuf, 0, sizeof(outbuf));
 
@@ -87,14 +73,37 @@ int main(int argc, char *argv[]) {
 
     ntrcmd[0] = 0x9F;
     printNTRCommand(ntrcmd);
-    sendMessage(NTR, ntrcmd, 0x8, 0x2000);
+    sendNTRMessage(ntrcmd, 0x2000);
 
     ntrcmd[0] = 0x90;
     printNTRCommand(ntrcmd);
     sendNTRMessage(ntrcmd, 0x4);
-    res = hid_read(powersave, outbuf, 0x4);
-    printf("CartID: %02x%02x%02x%02x\n",
-        outbuf[0], outbuf[1], outbuf[2], outbuf[3]);
+
+    uint8_t cardid[0x4];
+    hid_read(powersave, cardid, 0x4);
+    printf("CardID: %02x%02x%02x%02x\n",
+        cardid[0], cardid[1], cardid[2], cardid[3]);
+
+    bool cheapChip = (cardid[0] >> 7) & 1;
+
+    if (cheapChip) {
+        // Not handling this additional logic yet.
+        puts("I'm not dealing with this kind of card yet. Sorry!");
+        return -1;
+    }
+
+    uint8_t *header = (uint8_t*)malloc(0x4000);
+    if (!header) {
+        puts("Memory allocation failure!");
+    }
+
+    ntrcmd[0] = 0x00;
+    printNTRCommand(ntrcmd);
+    sendNTRMessage(ntrcmd, 0x4000);
+
+    hid_read(powersave, header, 0x4000);
+    FILE *headerfile = fopen("header.bin", "wb");
+    fwrite(header, 0x1000, 1, headerfile);
 
     return 0;
 }
