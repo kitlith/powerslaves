@@ -27,6 +27,15 @@ static void printCommand(const char *prefix, uint8_t *cmdbuf, unsigned len) {
     printf("\n");
 }
 
+static void readData(uint8_t *buf, unsigned len) {
+    if (!buf) return;
+    unsigned iii = 0;
+    while (iii < len) {
+        iii += hid_read(powersave, buf + iii, len - iii);
+        printf("Bytes read: 0x%x\n", iii);
+    }
+}
+
 #define printNTRCommand(buf) printCommand("NTR", buf, 0x08)
 #define printCTRCommand(buf) printCommand("CTR", buf, 0x10)
 
@@ -39,14 +48,16 @@ static void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, ui
 
     if (cmdbuf) {
         memcpy(outbuf + 6, cmdbuf, len);
-    } else if (len) {
+    } else if (len || response_len) {
         memset(outbuf + 6, 0, len);
+    } else {
+        memset(outbuf + 2, 0, sizeof(outbuf) - 2);
     }
 
     hid_write(powersave, outbuf, sizeof(outbuf));
 }
 
-#define sendGenericMessage(type, response_length) sendMessage(type, NULL, 0x00, response_length)
+#define sendGenericMessage(type) sendMessage(type, NULL, 0x00, 0x00)
 #define sendNTRMessage(cmdbuf, response_length) sendMessage(NTR, cmdbuf, 0x08, response_length)
 #define sendCTRMessage(cmdbuf, response_length) sendMessage(CTR, cmdbuf, 0x10, response_length)
 #define sendSPIMessage(cmdbuf, len, response_length) sendMessage(SPI, cmdbuf, len, response_length)
@@ -63,9 +74,15 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    sendGenericMessage(SWITCH_MODE, 0x00);
-    sendGenericMessage(NTR_MODE, 0x00);
-    sendGenericMessage(TEST, 0x40);
+    uint8_t *header = (uint8_t*)malloc(0x4000);
+    if (!header) {
+        puts("Memory allocation failure!");
+    }
+
+    sendGenericMessage(SWITCH_MODE);
+    sendGenericMessage(NTR_MODE);
+    sendGenericMessage(TEST);
+    readData(header, 0x40);
 
     memset(outbuf, 0, sizeof(outbuf));
 
@@ -74,39 +91,46 @@ int main(int argc, char *argv[]) {
     ntrcmd[0] = 0x9F;
     printNTRCommand(ntrcmd);
     sendNTRMessage(ntrcmd, 0x2000);
+    readData(header, 0x2000);
+
+    uint8_t cardid[0x4];
+    memset(cardid, 0, sizeof(cardid));
 
     ntrcmd[0] = 0x90;
     printNTRCommand(ntrcmd);
-    sendNTRMessage(ntrcmd, 0x4);
 
-    uint8_t cardid[0x4];
-    hid_read(powersave, cardid, 0x4);
+    sendNTRMessage(ntrcmd, 0x4);
+    readData(cardid, 0x4);
     printf("CardID: %02x%02x%02x%02x\n",
         cardid[0], cardid[1], cardid[2], cardid[3]);
 
     bool cheapChip = (cardid[0] >> 7) & 1;
 
-    if (cheapChip) {
-        // Not handling this additional logic yet.
-        puts("I'm not dealing with this kind of card yet. Sorry!");
-        return -1;
-    }
-
-    uint8_t *header = (uint8_t*)malloc(0x4000);
-    if (!header) {
-        puts("Memory allocation failure!");
-    }
     memset(header, 0, 0x4000);
 
     ntrcmd[0] = 0x00;
-    printNTRCommand(ntrcmd);
-    sendNTRMessage(ntrcmd, 0x4000);
+    if (cheapChip) {
+        for (unsigned cur_len = 0; cur_len < 0x4000; cur_len += 0x200) {
+            ntrcmd[1] = (uint8_t)((cur_len >> (0*8)) & 0xFF);
+            ntrcmd[2] = (uint8_t)((cur_len >> (1*8)) & 0xFF);
+            ntrcmd[3] = (uint8_t)((cur_len >> (2*8)) & 0xFF);
+            ntrcmd[4] = (uint8_t)((cur_len >> (3*8)) & 0xFF);
+            printNTRCommand(ntrcmd);
 
-    unsigned res = hid_read(powersave, header, 0x4000);
+            sendNTRMessage(ntrcmd, 0x200);
+            readData(header + cur_len, 0x200);
+        }
+    } else {
+        printNTRCommand(ntrcmd);
+
+        sendNTRMessage(ntrcmd, 0x4000);
+        readData(header, 0x4000);
+    }
+
     FILE *headerfile = fopen("header.bin", "wb");
     fwrite(header, 0x1000, 1, headerfile);
 
-    printf("%u bytes read.\n", res);
+    free(header);
 
     return 0;
 }
