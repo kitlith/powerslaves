@@ -32,7 +32,7 @@ static void readData(uint8_t *buf, unsigned len) {
     unsigned iii = 0;
     while (iii < len) {
         iii += hid_read(powersave, buf + iii, len - iii);
-        printf("Bytes read: 0x%x\n", iii);
+        // printf("Bytes read: 0x%x\n", iii);
     }
 }
 
@@ -104,31 +104,31 @@ int main(int argc, char *argv[]) {
     printf("CardID: %02x%02x%02x%02x\n",
         cardid[0], cardid[1], cardid[2], cardid[3]);
 
-    bool cheapChip = (cardid[0] >> 7) & 1;
+    // bool cheapChip = (cardid[3] >> 7) & 1;
 
     memset(header, 0, 0x4000);
 
     ntrcmd[0] = 0x00;
-    if (cheapChip) {
-        for (unsigned cur_len = 0; cur_len < 0x4000; cur_len += 0x200) {
-            ntrcmd[1] = (uint8_t)((cur_len >> (0*8)) & 0xFF);
-            ntrcmd[2] = (uint8_t)((cur_len >> (1*8)) & 0xFF);
-            ntrcmd[3] = (uint8_t)((cur_len >> (2*8)) & 0xFF);
-            ntrcmd[4] = (uint8_t)((cur_len >> (3*8)) & 0xFF);
-            printNTRCommand(ntrcmd);
-
-            sendNTRMessage(ntrcmd, 0x200);
-            readData(header + cur_len, 0x200);
-        }
-    } else {
+    // if (cheapChip) { // The C# code has this, but according to GBATek this doesn't affect header reads?
+    //     for (unsigned cur_len = 0; cur_len < 0x4000; cur_len += 0x200) {
+    //         ntrcmd[1] = (uint8_t)((cur_len >> (3*8)) & 0xFF);
+    //         ntrcmd[2] = (uint8_t)((cur_len >> (2*8)) & 0xFF);
+    //         ntrcmd[3] = (uint8_t)((cur_len >> (1*8)) & 0xFF);
+    //         ntrcmd[4] = (uint8_t)((cur_len >> (0*8)) & 0xFF);
+    //         printNTRCommand(ntrcmd);
+    //
+    //         sendNTRMessage(ntrcmd, 0x200);
+    //         readData(header + cur_len, 0x200);
+    //     }
+    // } else {
         printNTRCommand(ntrcmd);
 
         sendNTRMessage(ntrcmd, 0x4000);
         readData(header, 0x4000);
-    }
+    // }
 
-    FILE *headerfile = fopen("header.bin", "wb");
-    fwrite(header, 0x1000, 1, headerfile);
+    FILE *headerfile = fopen("header0x4000.bin", "wb");
+    fwrite(header, 0x4000, 1, headerfile);
 
     free(header);
 
