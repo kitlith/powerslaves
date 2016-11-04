@@ -24,7 +24,7 @@ static void printCommand(const char *prefix, uint8_t *cmdbuf, unsigned len) {
     for (unsigned iii = 0; iii < len; ++iii) {
         printf("%02x", cmdbuf[iii]);
     }
-    printf("\n");
+    puts("");
 }
 
 static void readData(uint8_t *buf, unsigned len) {
@@ -78,13 +78,19 @@ static void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len) {
 
 int main(int argc, char *argv[]) {
     if (hid_init()) {
-        printf("hid_init() failed!\n");
+        puts("hid_init() failed!");
         return -1;
     }
 
     powersave = hid_open(0x1C1A, 0x03D5, NULL);
     if (!powersave) {
-        printf("No PowerSaves device found!\n");
+        struct hid_device_info *enumeration = hid_enumerate(0, 0);
+        if (!enumeration) {
+            puts("No HID devices found! Try escelating privileges?");
+            return -1;
+        }
+        free(enumeration);
+        puts("No PowerSaves device found!");
         return -1;
     }
 
