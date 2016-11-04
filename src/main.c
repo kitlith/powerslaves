@@ -62,6 +62,20 @@ static void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, ui
 #define sendCTRMessage(cmdbuf, response_length) sendMessage(CTR, cmdbuf, 0x10, response_length)
 #define sendSPIMessage(cmdbuf, len, response_length) sendMessage(SPI, cmdbuf, len, response_length)
 
+static void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len) {
+    uint8_t cmd[8] = {command, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // memset(buf, 0, len);
+
+    printNTRCommand(cmd);
+    sendNTRMessage(buf, len);
+
+    readData(buf, len);
+}
+
+#define readHeader(buf, len) simpleNTRcmd(0x00, buf, len)
+#define readChipID(buf) simpleNTRcmd(0x90, buf, 0x4)
+#define dummyData(buf, len) simpleNTRcmd(0x9F, buf, len)
+
 int main(int argc, char *argv[]) {
     if (hid_init()) {
         printf("hid_init() failed!\n");
@@ -86,46 +100,14 @@ int main(int argc, char *argv[]) {
 
     memset(outbuf, 0, sizeof(outbuf));
 
-    uint8_t ntrcmd[0x8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    dummyData(header, 0x2000);
 
-    ntrcmd[0] = 0x9F;
-    printNTRCommand(ntrcmd);
-    sendNTRMessage(ntrcmd, 0x2000);
-    readData(header, 0x2000);
+    uint8_t chipid[0x4];
+    readChipID(chipid);
+    printf("ChipID: %02x%02x%02x%02x\n",
+        chipid[0], chipid[1], chipid[2], chipid[3]);
 
-    uint8_t cardid[0x4];
-    memset(cardid, 0, sizeof(cardid));
-
-    ntrcmd[0] = 0x90;
-    printNTRCommand(ntrcmd);
-
-    sendNTRMessage(ntrcmd, 0x4);
-    readData(cardid, 0x4);
-    printf("CardID: %02x%02x%02x%02x\n",
-        cardid[0], cardid[1], cardid[2], cardid[3]);
-
-    // bool cheapChip = (cardid[3] >> 7) & 1;
-
-    memset(header, 0, 0x4000);
-
-    ntrcmd[0] = 0x00;
-    // if (cheapChip) { // The C# code has this, but according to GBATek this doesn't affect header reads?
-    //     for (unsigned cur_len = 0; cur_len < 0x4000; cur_len += 0x200) {
-    //         ntrcmd[1] = (uint8_t)((cur_len >> (3*8)) & 0xFF);
-    //         ntrcmd[2] = (uint8_t)((cur_len >> (2*8)) & 0xFF);
-    //         ntrcmd[3] = (uint8_t)((cur_len >> (1*8)) & 0xFF);
-    //         ntrcmd[4] = (uint8_t)((cur_len >> (0*8)) & 0xFF);
-    //         printNTRCommand(ntrcmd);
-    //
-    //         sendNTRMessage(ntrcmd, 0x200);
-    //         readData(header + cur_len, 0x200);
-    //     }
-    // } else {
-        printNTRCommand(ntrcmd);
-
-        sendNTRMessage(ntrcmd, 0x4000);
-        readData(header, 0x4000);
-    // }
+    readHeader(header, 0x4000);
 
     FILE *headerfile = fopen("header0x4000.bin", "wb");
     fwrite(header, 0x4000, 1, headerfile);
