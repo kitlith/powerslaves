@@ -1,6 +1,6 @@
-TARGET := powertools
+TARGET := powerslaves
 
-CFLAGS := -O2 -pipe -march=native
+CFLAGS := -O2 -pipe -march=native -Wall -Wextra -Werror
 
 LDFLAGS := -lhidapi-libusb
 
@@ -14,5 +14,5 @@ clean:
 	rm $(TARGET)
 	rm -r build
 
-$(TARGET): build/main.o
-	$(CC) -o $@ $< $(LDFLAGS)
+$(TARGET): build/main.o build/communication.o build/debug.o
+	$(CC) -o $@ $^ $(LDFLAGS)
