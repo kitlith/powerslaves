@@ -7,6 +7,7 @@
 #include <hidapi/hidapi.h>
 
 #include "communication.h"
+#include "debug.h"
 
 // Takes a buffer to dump garbage into.
 static void cartInit(uint8_t *buf) {
@@ -16,6 +17,12 @@ static void cartInit(uint8_t *buf) {
     readData(buf, 0x40);
 }
 
+enum device {
+    DEVICE_NTR,
+    DEVICE_TWL,
+    DEVICE_3DS
+};
+
 int main(int argc, char *argv[]) {
     if (hid_init()) {
         puts("hid_init() failed!");
@@ -24,9 +31,10 @@ int main(int argc, char *argv[]) {
 
     unsigned header_len = 0x1000;
     const char *header_filename = "header.bin";
+    enum device dev = DEVICE_NTR;
 
     char c;
-    while ((c = getopt(argc, argv, "l:o:")) != -1) {
+    while ((c = getopt(argc, argv, "l:o:3i")) != -1) {
         switch (c) {
             case '?':
                 exit(-1);
@@ -37,6 +45,13 @@ int main(int argc, char *argv[]) {
             case 'o':
                 if (!optarg) exit(EXIT_FAILURE);
                 header_filename = optarg;
+                break;
+            case '3':
+                dev = DEVICE_3DS;
+                break;
+            case 'i':
+                dev = DEVICE_TWL;
+                break;
         }
     }
 
@@ -52,19 +67,24 @@ int main(int argc, char *argv[]) {
     cartInit(header);
     dummyData(header, 0x2000);
 
-    if (true) {
-        readChipID(chipid);
-        readHeader(header, header_len);
-    } else if (true) {
-        readHeader(header, header_len);
-        readChipID(chipid);
-    } else {
-        {
-            uint8_t command_3ds[] = {0x71, 0xC9, 0x3F, 0xE9, 0xBB, 0x0A, 0x3B, 0x18};
-            sendNTRMessage(command_3ds, 0x00);
+    switch (dev) {
+        default:
+        case DEVICE_NTR:
+            readHeader(header, header_len);
+            readChipID(chipid);
+            break;
+        case DEVICE_TWL:
             readChipID(chipid);
             readHeader(header, header_len);
-        }
+            break;
+        case DEVICE_3DS: {
+                uint8_t command_3ds[] = {0x71, 0xC9, 0x3F, 0xE9, 0xBB, 0x0A, 0x3B, 0x18};
+                printNTRCommand(command_3ds);
+                sendNTRMessage(command_3ds, 0x00);
+                readChipID(chipid);
+                readHeader(header, header_len);
+            }
+            break;
     }
 
     printf("ChipID: %02x%02x%02x%02x\n",
