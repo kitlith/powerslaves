@@ -92,14 +92,17 @@ int main(int argc, char *argv[]) {
         case DEVICE_NTR:
             readHeader(header, arg.header_len);
             readChipID(chipid);
+            readChipID(chipid);
             break;
         case DEVICE_TWL:
+            readChipID(chipid);
             readChipID(chipid);
             readHeader(header, arg.header_len);
             break;
         case DEVICE_CTR:
             printNTRCommand(CTRmagic);
             sendNTRMessage(CTRmagic, 0x00);
+            readChipID(chipid);
             readChipID(chipid);
             readHeader(header, arg.header_len);
             break;
