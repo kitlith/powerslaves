@@ -41,7 +41,7 @@ void readData(uint8_t *buf, unsigned len) {
     }
 }
 
-void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, uint16_t response_len) {
+void sendMessage(enum command_type type, const uint8_t *cmdbuf, uint8_t len, uint16_t response_len) {
     uint8_t *outbuf = getOutputBuffer();
     outbuf[1] = type;
     outbuf[2] = len;

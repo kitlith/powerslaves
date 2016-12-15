@@ -15,7 +15,7 @@ enum command_type {
 void readData(uint8_t *buf, unsigned len);
 
 // Takes a command type, command buffer with length, and the length of the expected response.
-void sendMessage(enum command_type type, uint8_t *cmdbuf, uint8_t len, uint16_t response_len);
+void sendMessage(enum command_type type, const uint8_t *cmdbuf, uint8_t len, uint16_t response_len);
 
 // Convience function that takes a single byte for the command buffer and reads data into the buffer.
 void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len);
