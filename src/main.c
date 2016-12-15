@@ -9,17 +9,20 @@
 #include "communication.h"
 #include "debug.h"
 
-enum device {
+enum behavior {
     DEVICE_NTR,
     DEVICE_TWL,
     DEVICE_CTR,
+    AK2I_DUMP_FLASH,
+    AK2I_WRITE_FLASH,
     DEVICE_AUTO = DEVICE_NTR
 };
 
 struct args {
     unsigned header_len;
     const char *header_filename;
-    enum device dev;
+    const char *flash_filename;
+    enum behavior dev;
 };
 
 // Takes a buffer to dump garbage into.
@@ -32,7 +35,7 @@ static void cartInit(uint8_t *buf) {
 
 static void parse_args(int argc, char *argv[], struct args *arg) {
     char c;
-    while ((c = getopt(argc, argv, "l:o:ntc")) != -1) {
+    while ((c = getopt(argc, argv, "l:o:ntcdf:")) != -1) {
         switch (c) {
             case '?':
                 exit(-1);
@@ -53,6 +56,16 @@ static void parse_args(int argc, char *argv[], struct args *arg) {
             case 'c':
                 arg->dev = DEVICE_CTR;
                 break;
+            case 'd':
+                arg->dev = AK2I_DUMP_FLASH;
+                break;
+            case 'f':
+                if (!optarg) exit(EXIT_FAILURE);
+                arg->dev = AK2I_WRITE_FLASH;
+                arg->flash_filename = optarg;
+                arg->header_filename = "ak2i_flash.bin";
+                arg->header_len = 0x1000000;
+                break;
         }
     }
 }
@@ -62,7 +75,7 @@ static const uint8_t CTRmagic[] = {0x71, 0xC9, 0x3F, 0xE9, 0xBB, 0x0A, 0x3B, 0x1
 int main(int argc, char *argv[]) {
     if (hid_init()) {
         puts("hid_init() failed!");
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     struct args arg = {
@@ -85,10 +98,9 @@ int main(int argc, char *argv[]) {
         dummyData(garbage, 0x2000);
     }
 
-    uint8_t chipid[0x4];
+    uint8_t chipid[0x4] = {0x00, 0x00, 0x00, 0x00};
 
     switch (arg.dev) {
-        default:
         case DEVICE_NTR:
             readHeader(header, arg.header_len);
             readChipID(chipid);
@@ -106,6 +118,31 @@ int main(int argc, char *argv[]) {
             readChipID(chipid);
             readHeader(header, arg.header_len);
             break;
+        case AK2I_DUMP_FLASH: {
+                uint8_t hw_revision[4];
+                readChipID(chipid);
+                simpleNTRcmd(0xD1, (uint8_t*)(&hw_revision), 4);
+                printf("AK2i Revision: %02x%02x%02x%02x\n",
+                    hw_revision[0], hw_revision[1], hw_revision[2], hw_revision[3]);
+
+                // uint8_t ak2ibuf[8] = {0xB7, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00};
+                // for (uint32_t addr=0; addr < arg.header_len; addr += 0x200) {
+                //     ak2ibuf[1] = (addr >> 24) & 0xFF;
+                //     ak2ibuf[2] = (addr >> 16) & 0xFF;
+                //     ak2ibuf[3] = (addr >>  8) & 0xFF;
+                //     ak2ibuf[4] = (addr >>  0) & 0xFF;
+                //     printNTRCommand(ak2ibuf);
+                //     sendNTRMessage(ak2ibuf, 0x200);
+                //     readData(header + addr, 0x200);
+                // }
+            }
+            break;
+        case AK2I_WRITE_FLASH:
+            printf("Not Implemented.\n");
+            exit(EXIT_FAILURE);
+        default:
+            printf("This should never happen.\n");
+            exit(EXIT_FAILURE);
     }
 
     printf("ChipID: %02x%02x%02x%02x\n",
