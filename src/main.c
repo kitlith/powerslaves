@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <hidapi/hidapi.h>
 
@@ -58,13 +59,15 @@ static void parse_args(int argc, char *argv[], struct args *arg) {
                 break;
             case 'd':
                 arg->dev = AK2I_DUMP_FLASH;
+                arg->header_filename = "ak2i_flash.bin";
+                arg->header_len = 0x1000000;
                 break;
             case 'f':
                 if (!optarg) exit(EXIT_FAILURE);
                 arg->dev = AK2I_WRITE_FLASH;
                 arg->flash_filename = optarg;
-                arg->header_filename = "ak2i_flash.bin";
-                arg->header_len = 0x1000000;
+                arg->header_filename = NULL;
+                arg->header_len = 0;
                 break;
         }
     }
@@ -81,11 +84,13 @@ int main(int argc, char *argv[]) {
     struct args arg = {
         .header_len = 0x1000,
         .header_filename = "header.bin",
+        .flash_filename = NULL,
         .dev = DEVICE_AUTO
     };
     parse_args(argc, argv, &arg);
 
-    printf("Reading 0x%x byte header to file '%s'.\n", arg.header_len, arg.header_filename);
+    if (arg.header_len) printf("Reading 0x%x byte header to file '%s'.\n", arg.header_len, arg.header_filename);
+    if (arg.flash_filename) printf("Flashing file %s to ak2i.", arg.flash_filename);
 
     uint8_t *header = (uint8_t*)malloc(arg.header_len);
     {
@@ -119,22 +124,50 @@ int main(int argc, char *argv[]) {
             readHeader(header, arg.header_len);
             break;
         case AK2I_DUMP_FLASH: {
-                uint8_t hw_revision[4];
+                uint32_t hw_revision = 0;
                 readChipID(chipid);
+                if (*(uint32_t*)chipid != 0x00000FC2) {
+                    printf("Not a AK2i! ChipID: %02x%02x%02x%02x\n",
+                        chipid[0], chipid[1], chipid[2], chipid[3]);
+                    exit(EXIT_FAILURE);
+                }
                 simpleNTRcmd(0xD1, (uint8_t*)(&hw_revision), 4);
-                printf("AK2i Revision: %02x%02x%02x%02x\n",
-                    hw_revision[0], hw_revision[1], hw_revision[2], hw_revision[3]);
 
-                // uint8_t ak2ibuf[8] = {0xB7, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00};
-                // for (uint32_t addr=0; addr < arg.header_len; addr += 0x200) {
-                //     ak2ibuf[1] = (addr >> 24) & 0xFF;
-                //     ak2ibuf[2] = (addr >> 16) & 0xFF;
-                //     ak2ibuf[3] = (addr >>  8) & 0xFF;
-                //     ak2ibuf[4] = (addr >>  0) & 0xFF;
-                //     printNTRCommand(ak2ibuf);
-                //     sendNTRMessage(ak2ibuf, 0x200);
-                //     readData(header + addr, 0x200);
-                // }
+                unsigned length = (hw_revision & 1) ? 0x1000000 : 0x200000;
+                length = (length < arg.header_len) ? length : arg.header_len;
+
+                uint8_t ak2ibuf[8] = {0xD0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+                printNTRCommand(ak2ibuf);
+                sendNTRMessage(ak2ibuf, 0); // CmdSetMapTableAddress
+
+                if (hw_revision & 1) {
+                    ak2ibuf[0] = 0xD8; ak2ibuf[6] = 0xC6; ak2ibuf[7] = 0x06;
+                    printNTRCommand(ak2ibuf);
+                    sendNTRMessage(ak2ibuf, 0); // CmdSetFlash1681_81
+                    memset(ak2ibuf, 0, sizeof(ak2ibuf));
+                }
+
+                ak2ibuf[0] = 0xC2; ak2ibuf[1] = 0x55; ak2ibuf[2] = 0xAA;
+                ak2ibuf[3] = 0x55; ak2ibuf[4] = 0xAA;
+                printNTRCommand(ak2ibuf);
+                sendNTRMessage(ak2ibuf, 4); // CmdActiveFatMap
+                {
+                    uint8_t garbage[4];
+                    readData(garbage, 4);
+                }
+                memset(ak2ibuf, 0, sizeof(ak2ibuf));
+
+                ak2ibuf[0] = 0xB7; ak2ibuf[5] = 0x10;
+                for (uint32_t addr=0; addr < length; addr += 0x200) {
+                    ak2ibuf[1] = (addr >> 24) & 0xFF;
+                    ak2ibuf[2] = (addr >> 16) & 0xFF;
+                    ak2ibuf[3] = (addr >>  8) & 0xFF;
+                    ak2ibuf[4] = (addr >>  0) & 0xFF;
+                    printNTRCommand(ak2ibuf); // CmdReadFlash
+                    sendNTRMessage(ak2ibuf, 0x200);
+                    readData(header + addr, 0x200);
+                }
+                printf("AK2i Revision: 0x%04x\n", hw_revision);
             }
             break;
         case AK2I_WRITE_FLASH:

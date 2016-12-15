@@ -1,6 +1,6 @@
 TARGET := powerslaves
 
-CFLAGS := -O2 -pipe -march=native -Wall -Wextra -Werror
+CFLAGS := -O2 -pipe -march=native -Wall -Wextra -Werror -Wno-strict-aliasing
 
 LDFLAGS := -lhidapi-libusb
 
