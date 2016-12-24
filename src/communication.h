@@ -23,6 +23,7 @@ void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len);
 // Convienence functions that specialize the more general functions above.
 
 #define sendGenericMessage(type) sendMessage(type, NULL, 0x00, 0x00)
+#define sendGenericMessageLen(type, response_length) sendMessage(type, NULL, 0x00, response_length)
 #define sendNTRMessage(cmdbuf, response_length) sendMessage(NTR, cmdbuf, 0x08, response_length)
 #define sendCTRMessage(cmdbuf, response_length) sendMessage(CTR, cmdbuf, 0x10, response_length)
 #define sendSPIMessage(cmdbuf, len, response_length) sendMessage(SPI, cmdbuf, len, response_length)

@@ -7,7 +7,7 @@
 #include "debug.h"
 
 static hid_device* getPowersaves() {
-    static hid_device *device;
+    static hid_device *device = NULL;
     if (!device) {
         device = hid_open(0x1C1A, 0x03D5, NULL);
         if (device == NULL) {
@@ -43,6 +43,7 @@ void readData(uint8_t *buf, unsigned len) {
 
 void sendMessage(enum command_type type, const uint8_t *cmdbuf, uint8_t len, uint16_t response_len) {
     uint8_t *outbuf = getOutputBuffer();
+    outbuf[0] = 0;
     outbuf[1] = type;
     outbuf[2] = len;
     outbuf[3] = 0x00;
@@ -57,7 +58,7 @@ void sendMessage(enum command_type type, const uint8_t *cmdbuf, uint8_t len, uin
         memset(outbuf + 2, 0, (sizeof(*outbuf) * OUTBUF_SIZE) - 2);
     }
 
-    hid_write(getPowersaves(), outbuf, sizeof(outbuf));
+    hid_write(getPowersaves(), outbuf, OUTBUF_SIZE);
 }
 
 void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len) {
@@ -65,7 +66,7 @@ void simpleNTRcmd(uint8_t command, uint8_t *buf, unsigned len) {
     // memset(buf, 0, len);
 
     printNTRCommand(cmd);
-    sendNTRMessage(buf, len);
+    sendNTRMessage(cmd, len);
 
     readData(buf, len);
 }
