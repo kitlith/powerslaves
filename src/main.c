@@ -2,13 +2,20 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <string.h>
 
 #include <hidapi/hidapi.h>
 
 #include "communication.h"
 #include "debug.h"
+
+#ifdef __unix__
+#include <getopt.h>
+
+#elif defined(_WIN32) || defined(WIN32)
+#include "wincompat/getopt.h"
+
+#endif
 
 enum behavior {
     DEVICE_NTR,

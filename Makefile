@@ -1,8 +1,15 @@
 TARGET := powerslaves
 
 CFLAGS := -O2 -pipe -march=native -Wall -Wextra -Werror -Wno-strict-aliasing
-
 LDFLAGS := -lhidapi-libusb
+
+OBJECT_FILES := build/main.o build/communication.o build/debug.o
+
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -DWIN32
+	OBJECT_FILES += build/wincompat/getopt.c
+endif
+
 
 build/%.o: src/%.c
 	mkdir -p build/
@@ -14,5 +21,5 @@ clean:
 	rm $(TARGET)
 	rm -r build
 
-$(TARGET): build/main.o build/communication.o build/debug.o
+$(TARGET): $(OBJECT_FILES)
 	$(CC) -o $@ $^ $(LDFLAGS)
