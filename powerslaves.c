@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdio.h>
-
 #include "powerslaves.h"
 #define OUTBUF_SIZE (CMDBUF_SIZE + 6)
 
@@ -30,9 +28,8 @@ int powerslaves_select(const wchar_t *serial) {
 
     outbuf.zero = 0x00;
 
-    if (powersaves) { hid_close(powersaves); }
+    if (powersaves) { hid_close(powersaves); powersaves = NULL; }
 
-    puts("Grabbing a new powersaves.");
     powersaves = hid_open(vendorid, productid, serial);
     if (!powersaves) { return -1; }
     return 0;
