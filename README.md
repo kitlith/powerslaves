@@ -2,27 +2,22 @@
 _Taking Powersaves as a slave to your will._  
 (Name courtesy of Normmatt)
 
-# IF YOU WANT SOMETHING THAT WORKS, GO TO THE MASTER BRANCH
-
 ## What is this?
 It's a little thing. Datel's Powersaves can do more than just
 reading and writing save files, but they won't tell you that.
 
 At the moment, this is just a small library that abstracts away having to deal
-with hidapi. It also doesn't work. Again. If you want to see something that
-works, go look at the application in the master branch. It also has a couple of
-examples that use the API, but again, doesn't work because something is borked.
-
-Once this works, this could be useful to anyone who wants to communicate with a
-DS or 3DS cartridge. Personally, a good example of this is ak2itool in the
-examples directory.
+with hidapi, aong with a few examples that use the API. This could be useful to
+anyone who wants to communicate with a DS or 3DS cartridge. Personally, a good
+usecase of this can be seen in the ak2itool example.
 
 This is licenced under the MIT licence, contained in LICENCE.
 
-### Why Bother?
-I have had (and am still having) many issues implementing this. Some were
-stupid mistakes. I'd like to save other people trouble next time they want to
-do something similar.
+### Why bother?
+I have had some issues implementing this. Some were stupid mistakes.
+I'd like to save other people trouble in case they want to do anything similar.
+
+~~I've also never made a library before, so, experience?~~
 
 ### TODO
  - Make absolutely sure this is cross platform. This was developed and tested
@@ -57,5 +52,5 @@ SeddiHz, for being the one to test the original application for me before I
 could test with my own yet-to-arrive powersaves. >\_>  
 hedgeberg, for inspiring me to work on this and similar projects. (NTRPi)  
 Everyone in #Cakey(-ot) on freenode.  
-The developers of hidapi, so that I didn't have to work up the relevant code.  
+The developers of hidapi, so that I didn't have to create the relevant code.  
 Datel, for making a device that was more flexible than they probably intended.  
