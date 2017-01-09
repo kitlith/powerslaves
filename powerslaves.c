@@ -5,6 +5,47 @@
 #include "powerslaves.h"
 #define OUTBUF_SIZE (CMDBUF_SIZE + 6)
 
+#ifdef POWERSLAVES_DEBUG
+#include <stdio.h>
+
+static void printcmd(enum command_type type, const uint8_t *buf) {
+    unsigned length = 0;
+    const char *prefix = NULL;
+    switch (type) {
+        case SWITCH_MODE:
+            prefix = "MODE";
+            break;
+        case NTR_MODE:
+            prefix = "MODE NTR";
+            break;
+        case TEST:
+            prefix = "TEST";
+            break;
+        case NTR:
+            prefix = "NTR ";
+            length = 8;
+            break;
+        case CTR:
+            prefix = "CTR ";
+            length = 0x10;
+            break;
+        case SPI:
+            prefix = "SPI ";
+            length = 8;
+    }
+
+    printf("%s", prefix);
+    if (length) {
+        for (const uint8_t *pos = buf; pos < (buf + length);) {
+            printf("%02x", *pos++);
+        }
+    }
+    puts("");
+}
+#else
+static void printcmd(enum command_type type, const uint8_t *buf) {}
+#endif
+
 static hid_device *powersaves = NULL;
 
 /*! \brief Command buffer sent to the powersaves.
@@ -28,7 +69,13 @@ int powerslaves_select(const wchar_t *serial) {
 
     outbuf.zero = 0x00;
 
-    if (powersaves) { hid_close(powersaves); powersaves = NULL; }
+    if (powersaves) {
+        #ifdef POWERSLAVES_DEBUG
+        puts("Reopening the powersaves device! Is there a bug somewhere?");
+        #endif
+        hid_close(powersaves);
+        powersaves = NULL;
+    }
 
     powersaves = hid_open(vendorid, productid, serial);
     if (!powersaves) { return -1; }
@@ -65,6 +112,7 @@ int powerslaves_send(enum command_type type, const uint8_t *cmdbuf, uint16_t res
     if (cmdbuf) { memcpy(outbuf.cmdbuf, cmdbuf, cmdlen); }
     else { memset(outbuf.cmdbuf, 0, CMDBUF_SIZE); }
 
+    printcmd(type, cmdbuf);
     return hid_write(powersaves, (uint8_t*)&outbuf, OUTBUF_SIZE);
 }
 
@@ -78,6 +126,9 @@ int powerslaves_receive(uint8_t *buf, uint16_t len) {
         if (ret > 0) {
             iii += ret;
         } else {
+            #ifdef POWERSLAVES_DEBUG
+            printf("hid_read returned %d!\n0x%x bytes read.", ret, iii);
+            #endif
             break;
         }
     }

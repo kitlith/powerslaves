@@ -11,10 +11,11 @@
 /*! \brief Powersaves command type.
  * Magic numbers that need to be sent to the Powersaves MCU.
  */
+// TODO: Dump firmware on the MCU and complete this enum.
 enum command_type {
     TEST = 0x02,
     SWITCH_MODE = 0x10,
-    NTR_MODE = 0x11,
+    NTR_MODE = 0x11, // TODO: I'm sure there's more along this line. maybe 0x12 is CTR_MODE?
     NTR = 0x13,
     CTR = 0x14,
     SPI = 0x15
@@ -60,6 +61,9 @@ int powerslaves_receive(uint8_t *buf, uint16_t len);
  */
 int powerslaves_sendreceive(enum command_type type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp);
 
+// TODO: This feels like a kludge, perhaps when the command_type enum above
+//       is completed this could be changed to powerslaves_mode(enum mode mode)
+//       or something.
 int powerslaves_reset();
 
 /*! \brief Deinitializes Powerslaves. */
