@@ -105,7 +105,7 @@ int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint1
     else { memset(outbuf + 6, 0, CMDBUF_SIZE); }
 
     printcmd(type, cmdbuf);
-    return hid_write(powersaves, (uint8_t*)&outbuf, OUTBUF_SIZE);
+    return hid_write(powersaves, outbuf, OUTBUF_SIZE);
 }
 
 int powerslaves_receive(uint8_t *buf, uint16_t len) {
