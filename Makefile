@@ -1,4 +1,5 @@
-CFLAGS := -pipe -O2 -fPIC -Wall -Wextra -Werror -fno-strict-aliasing -I.
+CWARNINGS := -Wall -Wextra -Werror -fno-strict-aliasing -Wno-error=unused-parameter
+CFLAGS := -pipe -O2 -fPIC -std=c89 -I. $(CWARNINGS)
 LDFLAGS := -lhidapi-libusb
 
 OFILES := powerslaves.o

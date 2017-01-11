@@ -3,14 +3,21 @@
 #include <string.h>
 
 #include "powerslaves.h"
-#define OUTBUF_SIZE (CMDBUF_SIZE + 6)
+
+#define OUTBUF_SIZE 65
+#define CMDBUF_SIZE (OUTBUF_SIZE - 6)
+
+static hid_device *powersaves = NULL;
+static uint8_t outbuf[CMDBUF_SIZE];
 
 #ifdef POWERSLAVES_DEBUG
 #include <stdio.h>
 
-static void printcmd(enum command_type type, const uint8_t *buf) {
+static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
     unsigned length = 0;
     const char *prefix = NULL;
+    const uint8_t *pos = buf;
+
     switch (type) {
         case SWITCH_MODE:
             prefix = "MODE";
@@ -36,38 +43,22 @@ static void printcmd(enum command_type type, const uint8_t *buf) {
 
     printf("%s", prefix);
     if (length) {
-        for (const uint8_t *pos = buf; pos < (buf + length);) {
+        while (pos < (buf + length)) {
             printf("%02x", *pos++);
         }
     }
     puts("");
 }
 #else
-static void printcmd(enum command_type type, const uint8_t *buf) {}
+static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {}
 #endif
 
-static hid_device *powersaves = NULL;
-
-/*! \brief Command buffer sent to the powersaves.
- * This struct exactly represents the buffer send to the powersaves, and is
- * used by copying in the appropriate bits and byteswapping when necessary.
- */
-struct powerslaves_cmdbuf {
-    uint8_t zero; //!< Required to be 0 when sending. Always overwritten.
-    uint8_t type; //!< Type of the command as described by the command_type enum.
-    uint8_t cmdlen[2]; //!< The command length. Based on the type field. Little Endian
-    uint8_t resplen[2]; //!< The response length. Little Endian.
-    uint8_t cmdbuf[CMDBUF_SIZE]; //!< The command send to the cartridge. This has a maximum size of CMDBUF_SIZE.
-} __attribute__((packed));
-
-static struct powerslaves_cmdbuf outbuf;
-
-// Pass NULL to get a default.
+/* Pass NULL to get a default. */
 int powerslaves_select(const wchar_t *serial) {
     static const unsigned vendorid = 0x1C1A;
     static const unsigned productid = 0x03D5;
 
-    outbuf.zero = 0x00;
+    outbuf[0] = 0x00;
 
     if (powersaves) {
         #ifdef POWERSLAVES_DEBUG
@@ -82,11 +73,12 @@ int powerslaves_select(const wchar_t *serial) {
     return 0;
 }
 
-int powerslaves_send(enum command_type type, const uint8_t *cmdbuf, uint16_t response_len) {
+int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len) {
+    uint16_t cmdlen = 0;
+
     if (!powersaves) {
         if (powerslaves_select(NULL)) return -1;
     }
-    uint16_t cmdlen = 0;
 
     switch (type) {
         case SWITCH_MODE:
@@ -94,7 +86,7 @@ int powerslaves_send(enum command_type type, const uint8_t *cmdbuf, uint16_t res
         case TEST:
             cmdlen = 0x0;
             break;
-        default: // Currently not well defined, should error in the future.
+        default: /* Currently not well defined, should error in the future. */
         case NTR:
             cmdlen = 0x8;
             break;
@@ -103,24 +95,25 @@ int powerslaves_send(enum command_type type, const uint8_t *cmdbuf, uint16_t res
             break;
     }
 
-    outbuf.type = type;
-    outbuf.cmdlen[0] = cmdlen & 0xFF;
-    outbuf.cmdlen[1] = (cmdlen >> 8) & 0xFF;
-    outbuf.resplen[0] = response_len & 0xFF;
-    outbuf.resplen[1] = (response_len >> 8) & 0xFF;
+    outbuf[1] = type;
+    outbuf[2] = cmdlen & 0xFF;
+    outbuf[3] = (cmdlen >> 8) & 0xFF;
+    outbuf[4] = response_len & 0xFF;
+    outbuf[5] = (response_len >> 8) & 0xFF;
 
-    if (cmdbuf) { memcpy(outbuf.cmdbuf, cmdbuf, cmdlen); }
-    else { memset(outbuf.cmdbuf, 0, CMDBUF_SIZE); }
+    if (cmdbuf) { memcpy(outbuf + 6, cmdbuf, cmdlen); }
+    else { memset(outbuf + 6, 0, CMDBUF_SIZE); }
 
     printcmd(type, cmdbuf);
     return hid_write(powersaves, (uint8_t*)&outbuf, OUTBUF_SIZE);
 }
 
 int powerslaves_receive(uint8_t *buf, uint16_t len) {
+    uint16_t iii = 0;
     if (!powersaves) {
         if (powerslaves_select(NULL)) return -1;
     }
-    uint16_t iii = 0;
+
     while (iii < len) {
         int ret = hid_read(powersaves, buf + iii, len - iii);
         if (ret > 0) {
@@ -136,7 +129,7 @@ int powerslaves_receive(uint8_t *buf, uint16_t len) {
     return iii;
 }
 
-int powerslaves_sendreceive(enum command_type type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp) {
+int powerslaves_sendreceive(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp) {
     int err;
     if ((err = powerslaves_send(type, cmdbuf, response_len)) < 0) return err;
     return powerslaves_receive(resp, response_len);
@@ -144,10 +137,10 @@ int powerslaves_sendreceive(enum command_type type, const uint8_t *cmdbuf, uint1
 
 int powerslaves_reset() {
     int err;
+    uint8_t testbuf[0x40];
+
     if ((err = powerslaves_send(SWITCH_MODE, NULL, 0x00)) < 0) return err;
     if ((err = powerslaves_send(NTR_MODE, NULL, 0x00)) < 0) return err;
-
-    uint8_t testbuf[0x40];
     if ((err = powerslaves_sendreceive(TEST, NULL, 0x40, testbuf)) < 0) return err;
 
     return 0;

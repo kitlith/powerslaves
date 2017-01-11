@@ -2,6 +2,7 @@
 *.a
 *.o
 *.bin
+*~
 
 examples/header
 examples/ak2itool

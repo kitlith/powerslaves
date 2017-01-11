@@ -6,16 +6,14 @@
 #include <stdint.h>
 #include <wchar.h>
 
-#define CMDBUF_SIZE 59
-
 /*! \brief Powersaves command type.
  * Magic numbers that need to be sent to the Powersaves MCU.
  */
-// TODO: Dump firmware on the MCU and complete this enum.
-enum command_type {
+/* TODO: Dump firmware on the MCU and complete this enum. */
+enum powerslaves_cmdtype {
     TEST = 0x02,
     SWITCH_MODE = 0x10,
-    NTR_MODE = 0x11, // TODO: I'm sure there's more along this line. maybe 0x12 is CTR_MODE?
+    NTR_MODE = 0x11, /* TODO: I'm sure there's more along this line. maybe 0x12 is CTR_MODE? */
     NTR = 0x13,
     CTR = 0x14,
     SPI = 0x15
@@ -39,7 +37,7 @@ int powerslaves_select(const wchar_t *serial);
  *
  *  \return Number of bytes sent on success, -1 on communication error, -2 on invalid paramater.
  */
-int powerslaves_send(enum command_type type, const uint8_t *cmdbuf, uint16_t response_len);
+int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len);
 
 /*! \brief Receives a response to a cartridge command.
  *
@@ -59,11 +57,11 @@ int powerslaves_receive(uint8_t *buf, uint16_t len);
  *
  *  \return Number of bytes received on success, -2 on invalid handle, -1 on communication error.
  */
-int powerslaves_sendreceive(enum command_type type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp);
+int powerslaves_sendreceive(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp);
 
-// TODO: This feels like a kludge, perhaps when the command_type enum above
-//       is completed this could be changed to powerslaves_mode(enum mode mode)
-//       or something.
+/* TODO: This feels like a kludge, perhaps when the command_type enum above
+         is completed this could be changed to powerslaves_mode(enum mode mode)
+         or something. */
 int powerslaves_reset();
 
 /*! \brief Deinitializes Powerslaves. */
