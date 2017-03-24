@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             puts("Memory allocation failure!");
         }
 
-        powerslaves_reset();
+        powerslaves_mode(ROM_MODE);
         powerslaves_sendreceive(NTR, dummy_cmd, 0x2000, garbage);
         free(garbage);
     }

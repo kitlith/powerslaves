@@ -22,8 +22,11 @@ static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
         case SWITCH_MODE:
             prefix = "MODE";
             break;
-        case NTR_MODE:
-            prefix = "MODE NTR";
+        case ROM_MODE:
+            prefix = "MODE ROM";
+            break;
+        case SPI_MODE:
+            prefix = "MODE SPI";
             break;
         case TEST:
             prefix = "TEST";
@@ -82,17 +85,19 @@ int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint1
 
     switch (type) {
         case SWITCH_MODE:
-        case NTR_MODE:
+        case ROM_MODE:
+        case SPI_MODE:
         case TEST:
             cmdlen = 0x0;
             break;
-        default: /* Currently not well defined, should error in the future. */
         case NTR:
             cmdlen = 0x8;
             break;
         case CTR:
             cmdlen = 0x10;
             break;
+        default:
+            return -2; // Invalid Parameter
     }
 
     outbuf[1] = type;
@@ -135,12 +140,20 @@ int powerslaves_sendreceive(enum powerslaves_cmdtype type, const uint8_t *cmdbuf
     return powerslaves_receive(resp, response_len);
 }
 
-int powerslaves_reset() {
+int powerslaves_mode(enum powerslaves_cmdtype mode = ROM_MODE) {
     int err;
     uint8_t testbuf[0x40];
 
+    switch (mode) {
+        case ROM_MODE:
+        case SPI_MODE:
+            break;
+        default:
+            return -2;
+    }
+
     if ((err = powerslaves_send(SWITCH_MODE, NULL, 0x00)) < 0) return err;
-    if ((err = powerslaves_send(NTR_MODE, NULL, 0x00)) < 0) return err;
+    if ((err = powerslaves_send(mode, NULL, 0x00)) < 0) return err;
     if ((err = powerslaves_sendreceive(TEST, NULL, 0x40, testbuf)) < 0) return err;
 
     return 0;

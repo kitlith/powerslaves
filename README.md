@@ -48,6 +48,8 @@ contents of that file to ak2i flash.
 
 ## Credits
 Normmatt, for the C# code this was based off of.  
+TobiX, for sharing some small details about commands that appearantly exist but
+are undocumented. And for reminding me about this once again. <\_<  
 SeddiHz, for being the one to test the original application for me before I
 could test with my own yet-to-arrive powersaves. >\_>  
 hedgeberg, for inspiring me to work on this and similar projects. (NTRPi)  

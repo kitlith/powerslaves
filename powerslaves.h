@@ -13,10 +13,14 @@
 enum powerslaves_cmdtype {
     TEST = 0x02,
     SWITCH_MODE = 0x10,
-    NTR_MODE = 0x11, /* TODO: I'm sure there's more along this line. maybe 0x12 is CTR_MODE? */
+    ROM_MODE = 0x11,
+    SPI_MODE = 0x12,
     NTR = 0x13,
     CTR = 0x14,
-    SPI = 0x15
+    SPI = 0x15,
+    // UNK1 = 0x16, // "weird reset for SPI and locks up powerslaves"
+    // UNK2 = 0x20, // does something. *shrugs*
+    // UNK3 = 0x30, // does something. *shrugs*
 };
 
 /*! \brief Optional function that initializes a particular powersaves.
@@ -44,25 +48,31 @@ int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint1
  *  \param buf Pointer to buffer that will receive the response.
  *  \param len Number of bytes to read into the buffer.
  *
- *  \return Number of bytes received on success, -2 on invalid handle.
+ *  \return Number of bytes received on success, -1 on communication error.
  */
 int powerslaves_receive(uint8_t *buf, uint16_t len);
 
 /*! \brief Sends a cartridge command and receives a response.
+ *
+ *  A small wrapper around powerslaves_send() and powerslaves_receive()
+ *  for the common case.
  *
  *  \param type Type of the command to be sent.
  *  \param cmdbuf Pointer to cartridge command.
  *  \param response_len Length of the response expected to be received.
  *  \param resp Pointer to buffer that will receive the response.
  *
- *  \return Number of bytes received on success, -2 on invalid handle, -1 on communication error.
+ *  \return Number of bytes received on success, -1 on communication error, -2 on invalid parameter.
  */
 int powerslaves_sendreceive(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len, uint8_t *resp);
 
-/* TODO: This feels like a kludge, perhaps when the command_type enum above
-         is completed this could be changed to powerslaves_mode(enum mode mode)
-         or something. */
-int powerslaves_reset();
+/*! \brief Resets the Powersaves device and switches mode.
+ *
+ *  \param mode Mode to switch to. This can be either ROM_MODE or SPI_MODE.
+ *
+ *  \return 0 on success, -1 on communication failure, -2 on invalid parameter.
+ */
+int powerslaves_mode(enum powerslaves_cmdtype mode);
 
 /*! \brief Deinitializes Powerslaves. */
 void powerslaves_exit();
