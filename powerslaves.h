@@ -18,9 +18,9 @@ enum powerslaves_cmdtype {
     NTR = 0x13,
     CTR = 0x14,
     SPI = 0x15,
-    // UNK1 = 0x16, // "weird reset for SPI and locks up powerslaves"
-    // UNK2 = 0x20, // does something. *shrugs*
-    // UNK3 = 0x30, // does something. *shrugs*
+    /* UNK1 = 0x16, // "weird reset for SPI and locks up powerslaves" */
+    /* UNK2 = 0x20, // does something. *shrugs* */
+    /* UNK3 = 0x30, // does something. *shrugs* */
 };
 
 /*! \brief Optional function that initializes a particular powersaves.
@@ -42,6 +42,18 @@ int powerslaves_select(const wchar_t *serial);
  *  \return Number of bytes sent on success, -1 on communication error, -2 on invalid paramater.
  */
 int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len);
+
+/*! \brief Sends a cartridge command of a specific length.
+ *
+ *  You should only need this for SPI commands. In all other cases, use the wrapper,
+ *  powerslaves_send().
+ *
+ *  \param type Type of the command to be sent.
+ *  \param cmdlen Length of cartridge command.
+ *  \param cmdbuf Pointer to cartridge command.
+ *  \param response_len Length of the response expected to be received.
+ */
+int powerslaves_sendlen(enum powerslaves_cmdtype type, uint16_t cmdlen, const uint8_t *cmdbuf, uint16_t response_len);
 
 /*! \brief Receives a response to a cartridge command.
  *

@@ -1,22 +1,28 @@
-CWARNINGS := -Wall -Wextra -Werror -fno-strict-aliasing -Wno-error=unused-parameter
-CFLAGS := -pipe -O2 -fPIC -std=c89 -I. $(CWARNINGS)
+CWARNINGS := -Wall -Wextra -fno-strict-aliasing -Wno-error=unused-parameter
+CFLAGS := -pipe -O2 -fPIC -I. $(CWARNINGS)
+CXXFLAGS := $(CFLAGS) -IChaiScript-6.0.0/include
 LDFLAGS := -lhidapi-libusb
 
-OFILES := powerslaves.o
 HEADER_FILES := powerslaves.h
-
-libpowerslaves.a: $(OFILES)
-	ar rcs libpowerslaves.a $(OFILES)
 
 all: libpowerslaves.a
 
-examples/header: libpowerslaves.a examples/header.o
-	$(CC) -o examples/header examples/header.o libpowerslaves.a $(LDFLAGS)
+powerslaves.o: powerslaves.c
+	$(CC) -o $@ -c $^ $(CFLAGS) -std=c89
 
-examples/ak2itool: libpowerslaves.a examples/ak2itool.o
-	$(CC) -o examples/ak2itool examples/ak2itool.o libpowerslaves.a $(LDFLAGS)
+libpowerslaves.a: powerslaves.o
+	ar rcs libpowerslaves.a $^
 
-example: examples/header examples/ak2itool
+examples/header: examples/header.o libpowerslaves.a
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+examples/ak2itool: examples/ak2itool.o libpowerslaves.a
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+examples/savetool: examples/savetool.o libpowerslaves.a
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+example: examples/header examples/ak2itool examples/savetool
 
 clean:
-	rm -f *.o *.a examples/header examples/ak2itool examples/*.o
+	rm -f *.o *.a powerslaves examples/header examples/ak2itool examples/*.o

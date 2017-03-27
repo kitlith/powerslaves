@@ -5,16 +5,15 @@
 #include "powerslaves.h"
 
 #define OUTBUF_SIZE 65
-#define CMDBUF_SIZE (OUTBUF_SIZE - 6)
 
 static hid_device *powersaves = NULL;
-static uint8_t outbuf[CMDBUF_SIZE];
+static uint8_t outbuf[OUTBUF_SIZE];
 
 #ifdef POWERSLAVES_DEBUG
 #include <stdio.h>
 
 static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
-    unsigned length = 0;
+    unsigned length = powerslaves_cmdlen(type);
     const char *prefix = NULL;
     const uint8_t *pos = buf;
 
@@ -33,19 +32,17 @@ static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
             break;
         case NTR:
             prefix = "NTR ";
-            length = 8;
             break;
         case CTR:
             prefix = "CTR ";
-            length = 0x10;
             break;
         case SPI:
-            prefix = "SPI ";
-            length = 8;
+            prefix = "SPI";
+            break;
     }
 
     printf("%s", prefix);
-    if (length) {
+    if (length && length != (unsigned)-2) {
         while (pos < (buf + length)) {
             printf("%02x", *pos++);
         }
@@ -76,28 +73,36 @@ int powerslaves_select(const wchar_t *serial) {
     return 0;
 }
 
-int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len) {
-    uint16_t cmdlen = 0;
-
-    if (!powersaves) {
-        if (powerslaves_select(NULL)) return -1;
-    }
-
+uint16_t powerslaves_cmdlen(enum powerslaves_cmdtype type) {
     switch (type) {
         case SWITCH_MODE:
         case ROM_MODE:
         case SPI_MODE:
         case TEST:
-            cmdlen = 0x0;
-            break;
+            return 0x0;
         case NTR:
-            cmdlen = 0x8;
+            return 0x8;
             break;
         case CTR:
-            cmdlen = 0x10;
+            return 0x10;
             break;
+        case SPI:
+            /* oh god why, how do I manage this? I'll just say invalid param for now. */
         default:
-            return -2; // Invalid Parameter
+            return -2; /* Invalid Parameter */
+    }
+}
+
+int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint16_t response_len) {
+    uint16_t cmdlen = powerslaves_cmdlen(type);
+    if (cmdlen == (uint16_t)-2) return -2;
+
+    return powerslaves_sendlen(type, cmdlen, cmdbuf, response_len);
+}
+
+int powerslaves_sendlen(enum powerslaves_cmdtype type, uint16_t cmdlen, const uint8_t *cmdbuf, uint16_t response_len) {
+    if (!powersaves) {
+        if (powerslaves_select(NULL)) return -1;
     }
 
     outbuf[1] = type;
@@ -107,7 +112,7 @@ int powerslaves_send(enum powerslaves_cmdtype type, const uint8_t *cmdbuf, uint1
     outbuf[5] = (response_len >> 8) & 0xFF;
 
     if (cmdbuf) { memcpy(outbuf + 6, cmdbuf, cmdlen); }
-    else { memset(outbuf + 6, 0, CMDBUF_SIZE); }
+    else { memset(outbuf + 6, 0, OUTBUF_SIZE - 6); }
 
     printcmd(type, cmdbuf);
     return hid_write(powersaves, outbuf, OUTBUF_SIZE);
@@ -140,7 +145,7 @@ int powerslaves_sendreceive(enum powerslaves_cmdtype type, const uint8_t *cmdbuf
     return powerslaves_receive(resp, response_len);
 }
 
-int powerslaves_mode(enum powerslaves_cmdtype mode = ROM_MODE) {
+int powerslaves_mode(enum powerslaves_cmdtype mode) {
     int err;
     uint8_t testbuf[0x40];
 
