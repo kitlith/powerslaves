@@ -41,10 +41,7 @@ ever again.
 `-n` for NTR mode. `-t` for TWL mode. `-c` for CTR mode.
 
 #### ak2itool
-`Usage: ./ak2itool [-d] [-l length] [-f filename]`
-
-`-d` dumps ak2i flash to `ak2i_flash.bin`, `-f` takes a filename and writes the
-contents of that file to ak2i flash.
+`ak2itool` has moved to its own repository! You can find it at https://github.com/kitling/ak2itool
 
 ## Credits
 Normmatt, for the C# code this was based off of.  
