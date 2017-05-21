@@ -3,6 +3,10 @@
 #ifndef POWERSLAVES_API
 #define POWERSLAVES_API
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <wchar.h>
 
@@ -88,5 +92,9 @@ int powerslaves_mode(enum powerslaves_cmdtype mode);
 
 /*! \brief Deinitializes Powerslaves. */
 void powerslaves_exit();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* end of include guard: POWERSLAVES_API */
