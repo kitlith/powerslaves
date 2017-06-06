@@ -15,37 +15,40 @@ static uint8_t outbuf[OUTBUF_SIZE];
 uint16_t powerslaves_cmdlen(enum powerslaves_cmdtype type);
 
 static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
-    unsigned length = powerslaves_cmdlen(type);
+    unsigned length = powerslaves_cmdlen(type) + 6;
     const char *prefix = NULL;
     const uint8_t *pos = buf;
 
     switch (type) {
         case SWITCH_MODE:
-            prefix = "MODE";
+            prefix = "MODE     ";
             break;
         case ROM_MODE:
-            prefix = "MODE ROM";
+            prefix = "MODE ROM ";
             break;
         case SPI_MODE:
-            prefix = "MODE SPI";
+            prefix = "MODE SPI ";
             break;
         case TEST:
-            prefix = "TEST";
+            prefix = "TEST     ";
             break;
         case NTR:
-            prefix = "NTR ";
+            prefix = "NTR      ";
             break;
         case CTR:
-            prefix = "CTR ";
+            prefix = "CTR      ";
             break;
         case SPI:
-            prefix = "SPI";
+            prefix = "SPI      ";
             break;
     }
 
     printf("%s", prefix);
     if (length && length != (unsigned)-2) {
         while (pos < (buf + length)) {
+            if (pos - buf == 6) {
+                printf(" ");
+            }
             printf("%02x", *pos++);
         }
     }
@@ -116,7 +119,7 @@ int powerslaves_sendlen(enum powerslaves_cmdtype type, uint16_t cmdlen, const ui
     if (cmdbuf) { memcpy(outbuf + 6, cmdbuf, cmdlen); }
     else { memset(outbuf + 6, 0, OUTBUF_SIZE - 6); }
 
-    printcmd(type, cmdbuf);
+    printcmd(type, outbuf);
     return hid_write(powersaves, outbuf, OUTBUF_SIZE);
 }
 
