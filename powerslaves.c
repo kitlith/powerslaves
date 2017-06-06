@@ -12,6 +12,8 @@ static uint8_t outbuf[OUTBUF_SIZE];
 #ifdef POWERSLAVES_DEBUG
 #include <stdio.h>
 
+uint16_t powerslaves_cmdlen(enum powerslaves_cmdtype type);
+
 static void printcmd(enum powerslaves_cmdtype type, const uint8_t *buf) {
     unsigned length = powerslaves_cmdlen(type);
     const char *prefix = NULL;
