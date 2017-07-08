@@ -16,13 +16,13 @@ libpowerslaves.a: powerslaves.o
 examples/header: examples/header.o libpowerslaves.a
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-examples/ak2itool: examples/ak2itool.o libpowerslaves.a
-	$(CC) -o $@ $^ $(LDFLAGS)
-
 examples/savetool: examples/savetool.o libpowerslaves.a
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-example: examples/header examples/ak2itool examples/savetool
+examples/arbitrary: examples/arbitrary.o libpowerslaves.a
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+example: examples/header examples/arbitrary examples/savetool
 
 clean:
-	rm -f *.o *.a powerslaves examples/header examples/ak2itool examples/*.o
+	rm -f *.o *.a powerslaves examples/header examples/arbitrary examples/*.o
