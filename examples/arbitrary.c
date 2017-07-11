@@ -26,10 +26,6 @@ int main(int argc, char *argv[]) {
             return 1;
     }
 
-    uint8_t *garbage = malloc(0x2000);
-    powerslaves_sendreceive(NTR, dummy_cmd, 0x2000, garbage);
-    free(garbage);
-
     for (size_t iii = 0; iii < sizeof(cmd)/sizeof(cmd[0]); ++iii) {
         printf("%02x", cmd[iii]);
     }
