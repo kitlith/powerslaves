@@ -37,10 +37,14 @@ int main(int argc, char *argv[]) {
     memset(returnbuf, 0, length);
     powerslaves_sendreceive(NTR, cmd, length, returnbuf);
 
-    for (size_t iii = 0; iii < length; ++iii) {
-        printf("%02x", returnbuf[iii]);
-    }
-    puts("");
+    FILE *datafile = fopen("arbitrary.bin", "wb");
+    fwrite(returnbuf, length, 1, datafile);
+    free(returnbuf);
+
+    // for (size_t iii = 0; iii < length; ++iii) {
+    //     printf("%02x", returnbuf[iii]);
+    // }
+    // puts("");
 
     return 0;
 }
