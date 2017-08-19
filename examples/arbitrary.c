@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-static const uint8_t dummy_cmd[] = {0x9F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+//static const uint8_t dummy_cmd[] = {0x9F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 int main(int argc, char *argv[]) {
     if (powerslaves_select(NULL)) {
@@ -37,14 +37,19 @@ int main(int argc, char *argv[]) {
     memset(returnbuf, 0, length);
     powerslaves_sendreceive(NTR, cmd, length, returnbuf);
 
+    /*
     FILE *datafile = fopen("arbitrary.bin", "wb");
     fwrite(returnbuf, length, 1, datafile);
     free(returnbuf);
+    */
 
-    // for (size_t iii = 0; iii < length; ++iii) {
-    //     printf("%02x", returnbuf[iii]);
-    // }
-    // puts("");
+
+    
+    for (size_t iii = 0; iii < length; ++iii) {
+        putchar((char)returnbuf[iii]);
+    }
+    puts("");
+    
 
     return 0;
 }
