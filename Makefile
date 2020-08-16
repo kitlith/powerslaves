@@ -8,7 +8,7 @@ HEADER_FILES := powerslaves.h
 all: libpowerslaves.a
 
 powerslaves.o: powerslaves.c
-	$(CC) -o $@ -c $^ $(CFLAGS) -std=c89
+	$(CC) -o $@ -c $^ $(CFLAGS) -std=c11
 
 libpowerslaves.a: powerslaves.o
 	ar rcs libpowerslaves.a $^

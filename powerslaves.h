@@ -13,9 +13,9 @@ extern "C" {
 /*! \brief Powersaves command type.
  * Magic numbers that need to be sent to the Powersaves MCU.
  */
-/* TODO: Dump firmware on the MCU and complete this enum. */
 enum powerslaves_cmdtype {
     TEST = 0x02,
+    // 0x08 and 0x09 appear to disconnect USB and infloop
     SWITCH_MODE = 0x10,
     ROM_MODE = 0x11,
     SPI_MODE = 0x12,
@@ -26,6 +26,8 @@ enum powerslaves_cmdtype {
     /* UNK2 = 0x20, // does something. *shrugs* */
     /* UNK3 = 0x30, // does something. *shrugs* */
 };
+
+// if first 4 bytes are [0x99, 0x44, 0x46, 0x55], it seems to perform a firmware update
 
 /*! \brief Optional function that initializes a particular powersaves.
  * This function is called automatically by any function that needs a powersaves,
