@@ -161,7 +161,11 @@ int powerslaves_mode(enum powerslaves_cmdtype mode) {
 
     if ((err = powerslaves_send(SWITCH_MODE, NULL, 0x00)) < 0) return err;
     if ((err = powerslaves_send(mode, NULL, 0x00)) < 0) return err;
-    if ((err = powerslaves_sendreceive(TEST, NULL, 0x40, testbuf)) < 0) return err;
+    if ((err = powerslaves_send(TEST, NULL, 0x00)) < 0) return err;
+    if ((err = powerslaves_receive(testbuf, 0x40)) < 0) return err;
+    if (strncmp((char*)testbuf, "App", 3) != 0) {
+        return -3;
+    }
 
     return 0;
 }
