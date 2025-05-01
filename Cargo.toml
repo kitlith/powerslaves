@@ -1,0 +1,9 @@
+[package]
+name = "powerslaves"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+binrw = "0.14.1"
+hidapi = "2.6.3"
+zerocopy = { version = "0.8.25", features = ["derive"] }
